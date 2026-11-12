@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Résidence">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Gestion de résidence</title>
+<style>
+:root{--p:#b8892b;--pd:#7a5a14;--gold:#d4a73c;--bg:#f6f4ef;--card:#fff;--tx:#14201e;--mu:#667472;--bd:#e6e0d2;--red:#b42318;--grn:#067647;--amb:#b54708}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+header{background:#111;color:var(--gold);border-bottom:3px solid var(--p);padding:calc(12px + env(safe-area-inset-top)) 16px 12px;position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:18px;margin:0}
+header small{color:#cfc7b4;display:block;font-size:12px}
+main{max-width:760px;margin:0 auto;padding:14px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--bd);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:6}
+nav button{flex:1;border:0;background:none;padding:9px 2px 8px;font-size:11px;color:var(--mu);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+nav button span{font-size:20px;line-height:1}
+nav button.on{color:var(--p);font-weight:600}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px}
+.stat b{display:block;font-size:22px;margin-top:2px}
+.stat i{font-style:normal;font-size:12px;color:var(--mu)}
+h2{font-size:16px;margin:16px 0 8px}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.mu{color:var(--mu);font-size:13px}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600}
+.t-ok{background:#dcfae6;color:var(--grn)}.t-no{background:#fee4e2;color:var(--red)}.t-part{background:#fef0c7;color:var(--amb)}.t-in{background:#f1e9d2;color:var(--pd)}
+button.btn,.btn{background:var(--p);color:#111;border:0;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:600;cursor:pointer}
+.btn.sec{background:#f1e9d2;color:var(--pd)}.btn.red{background:#fee4e2;color:var(--red)}.btn.sm{padding:6px 10px;font-size:13px}
+.fab{color:#111;position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;font-size:28px;box-shadow:0 4px 12px rgba(0,0,0,.25);z-index:7;padding:0}
+label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;font-size:16px;background:#fff;color:var(--tx);font-family:inherit}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet h3{margin:0 0 4px}
+.acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.acts .btn{flex:1}
+.empty{text-align:center;color:var(--mu);padding:30px 10px}
+.search{margin-bottom:10px}
+.warn{background:#fef0c7;color:var(--amb);padding:8px 10px;border-radius:8px;font-size:13px;margin-top:10px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom));background:#14201e;color:#fff;padding:10px 16px;border-radius:99px;font-size:14px;z-index:40;display:none}
+/* Facture */
+.inv{background:#fff;color:#000;padding:22px;font-size:14px}
+.inv h1{margin:0;font-size:22px;color:#111;letter-spacing:.5px}
+.inv table{width:100%;border-collapse:collapse;margin:18px 0}
+.inv th,.inv td{border-bottom:1px solid #ccc;padding:8px 6px;text-align:left}
+.inv td.r,.inv th.r{text-align:right}
+.inv .tot{font-size:16px;font-weight:700}
+.inv .head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:3px solid var(--p);padding-bottom:12px}.inv .tot{color:#7a5a14}
+.fullview{position:fixed;inset:0;background:#fff;z-index:30;overflow:auto}
+.fullview .bar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--bd);padding:10px;display:flex;gap:8px;z-index:2}
+@media print{body>*:not(#print){display:none!important}#print{display:block!important}.fullview{position:static;overflow:visible}.bar{display:none!important}}
+#print{display:none}
+</style>
+</head>
+<body>
+<header><div><h1 id="hname" style="letter-spacing:.5px">Gestion de résidence</h1><small id="hsub"></small></div></header>
+<main id="main"></main>
+<nav id="nav"></nav>
+<div id="toast"></div>
+<div id="print"></div>
+
+<script>
+"use strict";
+const KEY="residence_app_v1";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const todayStr=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const addDays=(s,n)=>{const d=new Date(s+"T12:00:00");d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const fmtDate=s=>s?new Date(s+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"}):"";
+const money=n=>new Intl.NumberFormat("fr-FR").format(Math.round(n||0)).replace(/ | /g," ")+" "+(D.settings.currency||"FCFA");
+
+let D={settings:{name:"",phone:"",address:"",currency:"FCFA",footer:"Merci de votre confiance.",invoiceCounter:0},rooms:[],clients:[],bookings:[]};
+let view="home",filterQ="";
+const SB_URL="https://drxvlyadqpgfxjbrsiso.supabase.co",SB_KEY="sb_publishable_d-xefZMjMV6pkomVOAN4xQ_ZGptTQ0g",SKEY="residence_session_v1";
+let SESS=null,syncMsg="",pushT=null;
+try{SESS=JSON.parse(localStorage.getItem(SKEY)||"null")}catch(e){}
+const saveSess=s=>{SESS=s;try{s?localStorage.setItem(SKEY,JSON.stringify(s)):localStorage.removeItem(SKEY)}catch(e){}};
+async function auth(path,body){const r=await fetch(SB_URL+"/auth/v1/"+path,{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.msg||j.error_description||j.message||"Erreur "+r.status);return j}
+function toSess(j){return {access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Date.now()+(j.expires_in||3600)*1000-60000,uid:j.user.id,email:j.user.email}}
+async function token(){if(!SESS)return null;if(Date.now()<SESS.expires_at)return SESS.access_token;
+ try{saveSess(toSess(await auth("token?grant_type=refresh_token",{refresh_token:SESS.refresh_token})));return SESS.access_token}catch(e){if(navigator.onLine){saveSess(null);syncMsg="Session expirée, reconnectez-vous";}return null}}
+async function api(method,qs,body,extra){const t=await token();if(!t)throw new Error("Non connecté");
+ const r=await fetch(SB_URL+"/rest/v1/residence_data"+qs,{method,headers:{apikey:SB_KEY,Authorization:"Bearer "+t,"Content-Type":"application/json",...(extra||{})},body:body?JSON.stringify(body):undefined});
+ if(!r.ok)throw new Error("Erreur serveur "+r.status);const tx=await r.text();return tx?JSON.parse(tx):null}
+async function pull(){if(!SESS||!navigator.onLine)return;
+ try{const rows=await api("GET","?select=data");const rd=rows&&rows[0]&&rows[0].data;
+  if(rd&&rd.rooms&&(rd.updatedAt||0)>(D.updatedAt||0)){D={...D,...rd,settings:{...D.settings,...(rd.settings||{})}};localStorage.setItem(KEY,JSON.stringify(D));syncMsg="Synchronisé";render()}
+  else if(!rd||(D.updatedAt||0)>(rd.updatedAt||0)){await push(true)}else syncMsg="Synchronisé";}
+ catch(e){syncMsg="Synchronisation impossible : "+e.message}}
+async function push(now){if(!SESS)return;clearTimeout(pushT);
+ const go=async()=>{if(!navigator.onLine){syncMsg="Hors ligne : sera envoyé plus tard";return}
+  try{await api("POST","?on_conflict=user_id",{user_id:SESS.uid,data:D,updated_at:new Date().toISOString()},{Prefer:"resolution=merge-duplicates,return=minimal"});syncMsg="Synchronisé à "+new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}
+  catch(e){syncMsg="Synchronisation impossible : "+e.message}};
+ if(now)await go();else pushT=setTimeout(go,1500)}
+
+function load(){try{const r=localStorage.getItem(KEY);if(r){const p=JSON.parse(r);D={...D,...p,settings:{...D.settings,...(p.settings||{})}}}}catch(e){}}
+function save(){D.updatedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){toast("Stockage plein ou indisponible")}push()}
+function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display="none",2200)}
+
+const total=b=>b.nights*b.price;
+const balance=b=>total(b)-(b.paid||0);
+const endDate=b=>addDays(b.start,b.nights);
+const client=id=>D.clients.find(c=>c.id===id)||{name:"(client supprimé)"};
+const room=id=>D.rooms.find(r=>r.id===id)||{name:"(chambre supprimée)"};
+const isOcc=(b,day)=>b.start<=day&&day<endDate(b);
+function payTag(b){const bal=balance(b);return bal<=0?'<span class="tag t-ok">Payé</span>':(b.paid>0?'<span class="tag t-part">Acompte</span>':'<span class="tag t-no">Impayé</span>')}
+
+/* ---------- Navigation ---------- */
+const TABS=[["home","🏠","Accueil"],["bookings","📅","Séjours"],["rooms","🛏️","Chambres"],["clients","👥","Clients"],["settings","⚙️","Réglages"]];
+function renderNav(){$("#nav").innerHTML=TABS.map(t=>`<button class="${view===t[0]?"on":""}" data-v="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join("");
+ $("#nav").querySelectorAll("button").forEach(b=>b.onclick=()=>{view=b.dataset.v;render()})}
+function render(){
+ $("#hname").textContent=D.settings.name||"Gestion de résidence";
+ $("#hsub").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+ renderNav();
+ document.querySelectorAll(".fab").forEach(e=>e.remove());
+ ({home:vHome,bookings:vBookings,rooms:vRooms,clients:vClients,settings:vSettings})[view]();
+ if(["home","bookings"].includes(view)&&D.rooms.length){const f=document.createElement("button");f.className="btn fab";f.textContent="+";f.setAttribute("aria-label","Nouveau séjour");f.onclick=()=>bookingForm();document.body.appendChild(f)}
+ window.scrollTo(0,0);
+}
+
+/* ---------- Accueil ---------- */
+function vHome(){
+ const t=todayStr(),m=t.slice(0,7);
+ if(!D.rooms.length){$("#main").innerHTML=`<div class="card"><h2 style="margin-top:0">Bienvenue 👋</h2><p>Pour commencer, deux étapes rapides :</p><p><b>1.</b> Renseignez le nom et le téléphone de votre résidence dans <b>Réglages</b>.<br><b>2.</b> Ajoutez vos <b>chambres</b> avec leur prix par nuit.</p><div class="acts"><button class="btn" id="g1">Réglages</button><button class="btn sec" id="g2">Ajouter une chambre</button></div></div>`;
+  $("#g1").onclick=()=>{view="settings";render()};$("#g2").onclick=()=>{view="rooms";render();roomForm()};return}
+ const occ=D.bookings.filter(b=>isOcc(b,t));
+ const arr=D.bookings.filter(b=>b.start===t);
+ const dep=D.bookings.filter(b=>endDate(b)===t);
+ const month=D.bookings.filter(b=>b.start.slice(0,7)===m);
+ const rev=month.reduce((s,b)=>s+total(b),0);
+ const cashed=month.reduce((s,b)=>s+(b.paid||0),0);
+ const unpaid=D.bookings.reduce((s,b)=>s+Math.max(0,balance(b)),0);
+ const free=D.rooms.length-new Set(occ.map(b=>b.roomId)).size;
+ const li=(b,extra="")=>`<div class="card" data-b="${b.id}" style="cursor:pointer"><div class="row"><div><b>${esc(client(b.clientId).name)}</b><div class="mu">${esc(room(b.roomId).name)} · ${fmtDate(b.start)} → ${fmtDate(endDate(b))}</div></div><div style="text-align:right">${payTag(b)}<div class="mu">${money(total(b))}</div></div></div>${extra}</div>`;
+ $("#main").innerHTML=`<div class="grid">
+  <div class="stat"><i>Chambres libres ce soir</i><b>${free} / ${D.rooms.length}</b></div>
+  <div class="stat"><i>Occupées</i><b>${D.rooms.length-free}</b></div>
+  <div class="stat"><i>Facturé ce mois</i><b>${money(rev)}</b></div>
+  <div class="stat"><i>Encaissé ce mois</i><b>${money(cashed)}</b></div></div>
+  <div class="card" style="border-color:${unpaid?"#fda29b":"var(--bd)"}"><div class="row"><span>Reste à encaisser (total)</span><b>${money(unpaid)}</b></div></div>
+  <h2>Arrivées aujourd'hui (${arr.length})</h2>${arr.map(b=>li(b)).join("")||'<div class="mu">Aucune arrivée.</div>'}
+  <h2>Départs aujourd'hui (${dep.length})</h2>${dep.map(b=>li(b)).join("")||'<div class="mu">Aucun départ.</div>'}
+  <h2>En séjour (${occ.length})</h2>${occ.map(b=>li(b)).join("")||'<div class="mu">Personne actuellement.</div>'}`;
+ $("#main").querySelectorAll("[data-b]").forEach(e=>e.onclick=()=>bookingDetail(e.dataset.b));
+}
+
+/* ---------- Séjours ---------- */
+function vBookings(){
+ let list=[...D.bookings].sort((a,b)=>b.start.localeCompare(a.start));
+ const q=filterQ.toLowerCase();
+ if(q)list=list.filter(b=>(client(b.clientId).name+" "+room(b.roomId).name+" "+(b.invoiceNo||"")).toLowerCase().includes(q));
+ $("#main").innerHTML=`<input class="search" id="q" placeholder="Rechercher un client, une chambre, une facture…" value="${esc(filterQ)}">`+
+  (list.length?list.map(b=>`<div class="card" data-b="${b.id}" style="cursor:pointer"><div class="row"><div><b>${esc(client(b.clientId).name)}</b><div class="mu">${esc(room(b.roomId).name)} · ${fmtDate(b.start)} · ${b.nights} nuit${b.nights>1?"s":""}</div>${b.invoiceNo?`<div class="mu">Facture ${esc(b.invoiceNo)}</div>`:""}</div><div style="text-align:right">${payTag(b)}<div><b>${money(total(b))}</b></div></div></div></div>`).join(""):`<div class="empty">${D.rooms.length?"Aucun séjour enregistré.<br>Touchez + pour en ajouter un.":"Ajoutez d'abord vos chambres."}</div>`);
+ $("#q").oninput=e=>{filterQ=e.target.value;const p=e.target.selectionStart;vBookings();const n=$("#q");n.focus();n.setSelectionRange(p,p)};
+ $("#main").querySelectorAll("[data-b]").forEach(e=>e.onclick=()=>bookingDetail(e.dataset.b));
+}
+
+function openModal(html){closeModal();const m=document.createElement("div");m.className="modal";m.id="modal";m.innerHTML=`<div class="sheet">${html}</div>`;m.addEventListener("click",e=>{if(e.target===m)closeModal()});document.body.appendChild(m);return m}
+function closeModal(){const m=$("#modal");if(m)m.remove()}
+
+function bookingForm(id){
+ const b=id?D.bookings.find(x=>x.id===id):{id:"",clientId:"",roomId:D.rooms[0].id,start:todayStr(),nights:1,price:D.rooms[0].price,paid:0,notes:""};
+ const m=openModal(`<h3>${id?"Modifier le séjour":"Nouveau séjour"}</h3>
+ <label>Client</label>
+ <select id="f_client"><option value="__new">➕ Nouveau client…</option>${D.clients.map(c=>`<option value="${c.id}" ${c.id===b.clientId?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ <div id="newc" style="display:${b.clientId?"none":"block"}"><label>Nom complet</label><input id="f_name" autocomplete="off"><div class="two"><div><label>Téléphone</label><input id="f_phone" inputmode="tel"></div><div><label>N° pièce d'identité</label><input id="f_idn"></div></div></div>
+ <label>Chambre</label><select id="f_room">${D.rooms.map(r=>`<option value="${r.id}" ${r.id===b.roomId?"selected":""}>${esc(r.name)} — ${money(r.price)}</option>`).join("")}</select>
+ <div class="two"><div><label>Arrivée</label><input type="date" id="f_start" value="${b.start}"></div><div><label>Nombre de nuits</label><input type="number" id="f_nights" min="1" value="${b.nights}" inputmode="numeric"></div></div>
+ <div class="two"><div><label>Prix par nuit</label><input type="number" id="f_price" min="0" value="${b.price}" inputmode="numeric"></div><div><label>Montant payé</label><input type="number" id="f_paid" min="0" value="${b.paid||0}" inputmode="numeric"></div></div>
+ <label>Notes</label><textarea id="f_notes" rows="2">${esc(b.notes)}</textarea>
+ <div id="tot" class="card" style="margin:12px 0 0"></div><div id="warn"></div>
+ <div class="acts"><button class="btn sec" id="cancel">Annuler</button><button class="btn" id="ok">Enregistrer</button></div>`);
+ const g=s=>m.querySelector(s);
+ const upd=()=>{const n=Math.max(1,+g("#f_nights").value||1),p=+g("#f_price").value||0,pd=+g("#f_paid").value||0;
+  g("#tot").innerHTML=`<div class="row"><span>Total (${n} × ${money(p)})</span><b>${money(n*p)}</b></div><div class="row mu"><span>Reste à payer</span><span>${money(n*p-pd)}</span></div>`;
+  const tmp={start:g("#f_start").value,nights:n},rid=g("#f_room").value;
+  const clash=D.bookings.find(x=>x.id!==id&&x.roomId===rid&&tmp.start<endDate(x)&&x.start<addDays(tmp.start,n));
+  g("#warn").innerHTML=clash?`<div class="warn">⚠️ Cette chambre est déjà prise du ${fmtDate(clash.start)} au ${fmtDate(endDate(clash))} (${esc(client(clash.clientId).name)}).</div>`:""};
+ g("#f_client").onchange=e=>{g("#newc").style.display=e.target.value==="__new"?"block":"none"};
+ g("#f_room").onchange=e=>{g("#f_price").value=room(e.target.value).price;upd()};
+ ["#f_start","#f_nights","#f_price","#f_paid"].forEach(s=>g(s).oninput=upd);upd();
+ g("#cancel").onclick=closeModal;
+ g("#ok").onclick=()=>{
+  let cid=g("#f_client").value;
+  if(cid==="__new"){const nm=g("#f_name").value.trim();if(!nm){toast("Saisissez le nom du client");return}
+   const c={id:uid(),name:nm,phone:g("#f_phone").value.trim(),idnum:g("#f_idn").value.trim()};D.clients.push(c);cid=c.id}
+  const n=Math.max(1,Math.floor(+g("#f_nights").value||1));
+  if(!g("#f_start").value){toast("Choisissez une date d'arrivée");return}
+  const o={id:b.id||uid(),clientId:cid,roomId:g("#f_room").value,start:g("#f_start").value,nights:n,price:Math.max(0,+g("#f_price").value||0),paid:Math.max(0,+g("#f_paid").value||0),notes:g("#f_notes").value.trim(),invoiceNo:b.invoiceNo||""};
+  if(id){D.bookings[D.bookings.findIndex(x=>x.id===id)]=o}else D.bookings.push(o);
+  save();closeModal();render();toast("Séjour enregistré")};
+}
+
+function bookingDetail(id){
+ const b=D.bookings.find(x=>x.id===id);if(!b)return;const c=client(b.clientId);
+ const m=openModal(`<h3>${esc(c.name)}</h3><div class="mu">${esc(c.phone||"")}${c.idnum?" · Pièce "+esc(c.idnum):""}</div>
+ <div class="card" style="margin-top:12px"><div class="row"><span>Chambre</span><b>${esc(room(b.roomId).name)}</b></div>
+ <div class="row"><span>Séjour</span><b>${fmtDate(b.start)} → ${fmtDate(endDate(b))}</b></div>
+ <div class="row"><span>Nuits</span><b>${b.nights} × ${money(b.price)}</b></div>
+ <div class="row"><span>Total</span><b>${money(total(b))}</b></div>
+ <div class="row"><span>Payé</span><b>${money(b.paid)}</b></div>
+ <div class="row"><span>Reste</span><b style="color:${balance(b)>0?"var(--red)":"var(--grn)"}">${money(balance(b))}</b></div>
+ ${b.invoiceNo?`<div class="row"><span>Facture</span><b>${esc(b.invoiceNo)}</b></div>`:""}${b.notes?`<div class="mu" style="margin-top:8px">${esc(b.notes)}</div>`:""}</div>
+ <div class="acts"><button class="btn" id="inv">🧾 Facture</button>${balance(b)>0?'<button class="btn sec" id="pay">Tout encaisser</button>':""}</div>
+ <div class="acts"><button class="btn sec" id="edit">Modifier</button><button class="btn red" id="del">Supprimer</button><button class="btn sec" id="close">Fermer</button></div>`);
+ const g=s=>m.querySelector(s);
+ g("#close").onclick=closeModal;g("#edit").onclick=()=>{closeModal();bookingForm(id)};
+ g("#inv").onclick=()=>{closeModal();showInvoice(id)};
+ if(g("#pay"))g("#pay").onclick=()=>{b.paid=total(b);save();closeModal();render();toast("Paiement enregistré")};
+ g("#del").onclick=()=>{if(confirmDel(g("#del"))){D.bookings=D.bookings.filter(x=>x.id!==id);save();closeModal();render()}};
+}
+/* confirmation en deux touches (les boîtes confirm() ne sont pas fiables dans toutes les vues) */
+function confirmDel(btn){if(btn.dataset.sure){return true}btn.dataset.sure="1";btn.textContent="Confirmer ?";setTimeout(()=>{if(btn.isConnected){delete btn.dataset.sure;btn.textContent="Supprimer"}},3000);return false}
+
+/* ---------- Facture ---------- */
+function showInvoice(id){
+ const b=D.bookings.find(x=>x.id===id);const c=client(b.clientId),r=room(b.roomId),s=D.settings;
+ if(!b.invoiceNo){s.invoiceCounter=(s.invoiceCounter||0)+1;b.invoiceNo="F-"+b.start.slice(0,4)+"-"+String(s.invoiceCounter).padStart(4,"0");save()}
+ const html=`<div class="inv"><div class="head"><div><h1>${esc(s.name||"Résidence")}</h1><div>${esc(s.address||"")}</div><div>${s.phone?"Tél : "+esc(s.phone):""}</div></div>
+ <div style="text-align:right"><h1 style="font-size:20px">FACTURE</h1><div><b>N° ${esc(b.invoiceNo)}</b></div><div>Date : ${fmtDate(todayStr())}</div></div></div>
+ <p><b>Client :</b> ${esc(c.name)}${c.phone?"<br>Tél : "+esc(c.phone):""}${c.idnum?"<br>Pièce d'identité : "+esc(c.idnum):""}</p>
+ <table><thead><tr><th>Désignation</th><th class="r">Nuits</th><th class="r">Prix unitaire</th><th class="r">Montant</th></tr></thead>
+ <tbody><tr><td>${esc(r.name)}<br><small>Du ${fmtDate(b.start)} au ${fmtDate(endDate(b))}</small></td><td class="r">${b.nights}</td><td class="r">${money(b.price)}</td><td class="r">${money(total(b))}</td></tr></tbody>
+ <tfoot><tr><td colspan="3" class="r tot">TOTAL</td><td class="r tot">${money(total(b))}</td></tr>
+ <tr><td colspan="3" class="r">Montant payé</td><td class="r">${money(b.paid)}</td></tr>
+ <tr><td colspan="3" class="r"><b>Reste à payer</b></td><td class="r"><b>${money(balance(b))}</b></td></tr></tfoot></table>
+ <p style="margin-top:28px">${esc(s.footer||"")}</p></div>`;
+ const v=document.createElement("div");v.className="fullview";v.id="fv";
+ v.innerHTML=`<div class="bar"><button class="btn sec" id="back">← Retour</button><button class="btn" id="prt" style="flex:1">🖨️ Imprimer / Enregistrer en PDF</button></div>${html}`;
+ document.body.appendChild(v);$("#print").innerHTML=html;
+ $("#back").onclick=()=>{v.remove();$("#print").innerHTML="";render()};
+ $("#prt").onclick=()=>{try{window.print()}catch(e){toast("Impression indisponible ici")}};
+}
+
+/* ---------- Chambres ---------- */
+function vRooms(){
+ $("#main").innerHTML=`<div class="row" style="margin-bottom:10px"><h2 style="margin:0">Mes chambres</h2><button class="btn sm" id="add">+ Chambre</button></div>`+
+ (D.rooms.length?D.rooms.map(r=>{const o=D.bookings.some(b=>isOcc(b,todayStr())&&b.roomId===r.id);return `<div class="card" data-r="${r.id}" style="cursor:pointer"><div class="row"><div><b>${esc(r.name)}</b><div class="mu">${money(r.price)} / nuit</div></div><span class="tag ${o?"t-no":"t-ok"}">${o?"Occupée":"Libre"}</span></div></div>`}).join(""):'<div class="empty">Aucune chambre. Ajoutez-en une.</div>');
+ $("#add").onclick=()=>roomForm();
+ $("#main").querySelectorAll("[data-r]").forEach(e=>e.onclick=()=>roomForm(e.dataset.r));
+}
+function roomForm(id){
+ const r=id?D.rooms.find(x=>x.id===id):{name:"",price:D.rooms.length?D.rooms[D.rooms.length-1].price:25000};
+ const m=openModal(`<h3>${id?"Modifier la chambre":"Nouvelle chambre"}</h3><label>Nom ou numéro</label><input id="r_n" value="${esc(r.name)}" placeholder="Ex : Chambre 1"><label>Prix par nuit</label><input id="r_p" type="number" min="0" inputmode="numeric" value="${r.price}">
+ <div class="acts"><button class="btn sec" id="c">Annuler</button>${id?'<button class="btn red" id="d">Supprimer</button>':""}<button class="btn" id="o">Enregistrer</button></div>`);
+ const g=s=>m.querySelector(s);g("#c").onclick=closeModal;
+ g("#o").onclick=()=>{const n=g("#r_n").value.trim();if(!n){toast("Saisissez un nom");return}const p=Math.max(0,+g("#r_p").value||0);
+  if(id){r.name=n;r.price=p}else D.rooms.push({id:uid(),name:n,price:p});save();closeModal();render()};
+ if(id)g("#d").onclick=()=>{if(D.bookings.some(b=>b.roomId===id)){toast("Cette chambre a des séjours : suppression impossible");return}
+  if(confirmDel(g("#d"))){D.rooms=D.rooms.filter(x=>x.id!==id);save();closeModal();render()}};
+}
+
+/* ---------- Clients ---------- */
+function vClients(){
+ $("#main").innerHTML=`<div class="row" style="margin-bottom:10px"><h2 style="margin:0">Mes clients</h2><button class="btn sm" id="add">+ Client</button></div>`+
+ (D.clients.length?[...D.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>{const n=D.bookings.filter(b=>b.clientId===c.id);const due=n.reduce((s,b)=>s+Math.max(0,balance(b)),0);
+  return `<div class="card" data-c="${c.id}" style="cursor:pointer"><div class="row"><div><b>${esc(c.name)}</b><div class="mu">${esc(c.phone||"—")} · ${n.length} séjour${n.length>1?"s":""}</div></div>${due?`<span class="tag t-no">${money(due)} dû</span>`:""}</div></div>`}).join(""):'<div class="empty">Aucun client pour l\'instant.</div>');
+ $("#add").onclick=()=>clientForm();
+ $("#main").querySelectorAll("[data-c]").forEach(e=>e.onclick=()=>clientForm(e.dataset.c));
+}
+function clientForm(id){
+ const c=id?D.clients.find(x=>x.id===id):{name:"",phone:"",idnum:""};
+ const m=openModal(`<h3>${id?"Fiche client":"Nouveau client"}</h3><label>Nom complet</label><input id="c_n" value="${esc(c.name)}"><label>Téléphone</label><input id="c_p" inputmode="tel" value="${esc(c.phone)}"><label>N° pièce d'identité</label><input id="c_i" value="${esc(c.idnum)}">
+ <div class="acts"><button class="btn sec" id="c">Annuler</button>${id?'<button class="btn red" id="d">Supprimer</button>':""}<button class="btn" id="o">Enregistrer</button></div>`);
+ const g=s=>m.querySelector(s);g("#c").onclick=closeModal;
+ g("#o").onclick=()=>{const n=g("#c_n").value.trim();if(!n){toast("Saisissez un nom");return}
+  const o={name:n,phone:g("#c_p").value.trim(),idnum:g("#c_i").value.trim()};if(id)Object.assign(c,o);else D.clients.push({id:uid(),...o});save();closeModal();render()};
+ if(id)g("#d").onclick=()=>{if(D.bookings.some(b=>b.clientId===id)){toast("Ce client a des séjours : suppression impossible");return}
+  if(confirmDel(g("#d"))){D.clients=D.clients.filter(x=>x.id!==id);save();closeModal();render()}};
+}
+
+/* ---------- Réglages ---------- */
+function vSettings(){
+ const s=D.settings;
+ $("#main").innerHTML=`<div class="card"><h2 style="margin-top:0">Ma résidence</h2>
+ <label>Nom de la résidence</label><input id="s_n" value="${esc(s.name)}" placeholder="Ex : Résidence Carmelia">
+ <label>Téléphone</label><input id="s_p" inputmode="tel" value="${esc(s.phone)}">
+ <label>Adresse</label><input id="s_a" value="${esc(s.address)}" placeholder="Ex : Abidjan Cocody">
+ <label>Devise</label><input id="s_c" value="${esc(s.currency)}">
+ <label>Message en bas des factures</label><textarea id="s_f" rows="2">${esc(s.footer)}</textarea>
+ <div class="acts"><button class="btn" id="sv">Enregistrer</button></div></div>
+ <div class="card"><h2 style="margin-top:0">Compte et synchronisation</h2>${SESS?`<p class="mu">Connecté : <b>${esc(SESS.email)}</b><br>${esc(syncMsg||"Synchronisation active")}</p><div class="acts"><button class="btn sec" id="sy">Synchroniser maintenant</button><button class="btn red" id="lo">Se déconnecter</button></div>`:`<p class="mu">Créez un compte pour retrouver vos données sur plusieurs appareils et ne jamais les perdre.</p><label>E-mail</label><input id="a_e" type="email" autocomplete="email" inputmode="email"><label>Mot de passe (8 caractères minimum)</label><input id="a_p" type="password" autocomplete="current-password"><div class="acts"><button class="btn" id="li">Se connecter</button><button class="btn sec" id="su">Créer un compte</button></div>`}</div>
+ <div class="card"><h2 style="margin-top:0">Sauvegarde</h2><p class="mu">Vos données sont stockées uniquement sur cet appareil. Faites une sauvegarde régulièrement et gardez-la en lieu sûr (WhatsApp, e-mail, Drive…).</p>
+ <div class="acts"><button class="btn sec" id="ex">Copier la sauvegarde</button><label class="btn sec" style="margin:0;text-align:center">Importer un fichier<input type="file" id="im" accept=".json,application/json" hidden></label></div>
+ <label>Ou collez une sauvegarde ici pour la restaurer</label><textarea id="paste" rows="3" placeholder="Collez le texte de la sauvegarde"></textarea>
+ <div class="acts"><button class="btn sec" id="rs">Restaurer depuis le texte</button></div></div>
+ <div class="card"><h2 style="margin-top:0">Zone sensible</h2><div class="acts"><button class="btn red" id="wipe">Tout effacer</button></div></div>`;
+ const enter=async(fn)=>{const e=$("#a_e").value.trim(),pw=$("#a_p").value;if(!e||pw.length<8){toast("E-mail et mot de passe (8 caractères min.) requis");return}
+  try{const j=await fn(e,pw);if(!j.access_token){toast("Compte créé : confirmez votre e-mail, puis connectez-vous");return}saveSess(toSess(j));syncMsg="";await pull();render();toast("Connecté")}catch(x){toast(/already|registered/i.test(x.message)?"Compte existant : utilisez Se connecter":/invalid/i.test(x.message)?"E-mail ou mot de passe incorrect":x.message)}};
+ if($("#li")){$("#li").onclick=()=>enter((e,p)=>auth("token?grant_type=password",{email:e,password:p}));$("#su").onclick=()=>enter((e,p)=>auth("signup",{email:e,password:p}))}
+ if($("#sy"))$("#sy").onclick=async()=>{await pull();await push(true);render();toast(syncMsg)};
+ if($("#lo"))$("#lo").onclick=()=>{saveSess(null);syncMsg="";render();toast("Déconnecté (données conservées sur l'appareil)")};
+ $("#sv").onclick=()=>{Object.assign(s,{name:$("#s_n").value.trim(),phone:$("#s_p").value.trim(),address:$("#s_a").value.trim(),currency:$("#s_c").value.trim()||"FCFA",footer:$("#s_f").value.trim()});save();render();toast("Réglages enregistrés")};
+ $("#ex").onclick=async()=>{const t=JSON.stringify(D);try{await navigator.clipboard.writeText(t);toast("Sauvegarde copiée — collez-la dans un message")}catch(e){$("#paste").value=t;$("#paste").select();toast("Copiez le texte affiché")}};
+ const restore=txt=>{try{const p=JSON.parse(txt);if(!p||!Array.isArray(p.rooms)||!Array.isArray(p.bookings)||!Array.isArray(p.clients))throw 0;D={...D,...p,settings:{...D.settings,...(p.settings||{})}};save();render();toast("Données restaurées")}catch(e){toast("Sauvegarde invalide")}};
+ $("#rs").onclick=()=>restore($("#paste").value);
+ $("#im").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>restore(r.result);r.readAsText(f)};
+ $("#wipe").onclick=()=>{if(confirmDel($("#wipe"))){D={settings:{name:"",phone:"",address:"",currency:"FCFA",footer:"Merci de votre confiance.",invoiceCounter:0},rooms:[],clients:[],bookings:[]};save();render()}};
+}
+
+load();render();
+if(SESS)pull();
+window.addEventListener("online",()=>SESS&&pull());
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&SESS)pull()});
+if("serviceWorker" in navigator&&location.protocol.startsWith("http")){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+</script>
+</body>
+</html>
