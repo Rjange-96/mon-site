@@ -58,6 +58,13 @@ input,select,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-
 .fullview .bar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--bd);padding:10px;display:flex;gap:8px;z-index:2}
 @media print{body>*:not(#print){display:none!important}#print{display:block!important}.fullview{position:static;overflow:visible}.bar{display:none!important}}
 #print{display:none}
+/* Assistant sécurité */
+.cy-log{display:flex;flex-direction:column;gap:8px;height:calc(100vh - 330px);min-height:220px;overflow-y:auto;padding:4px 2px 10px}
+.cy-m{padding:10px 12px;border-radius:14px;max-width:88%;white-space:pre-wrap;line-height:1.4;font-size:15px;overflow-wrap:anywhere}
+.cy-u{align-self:flex-end;background:#111;color:var(--gold)}
+.cy-b{align-self:flex-start;background:#fff;border:1px solid var(--bd)}
+.cy-meta{font-size:11px;color:var(--mu);margin-top:4px}
+.cy-row{display:flex;gap:8px;align-items:center}.cy-row input{flex:1}
 </style>
 </head>
 <body>
@@ -115,7 +122,7 @@ const isOcc=(b,day)=>b.start<=day&&day<endDate(b);
 function payTag(b){const bal=balance(b);return bal<=0?'<span class="tag t-ok">Payé</span>':(b.paid>0?'<span class="tag t-part">Acompte</span>':'<span class="tag t-no">Impayé</span>')}
 
 /* ---------- Navigation ---------- */
-const TABS=[["home","🏠","Accueil"],["bookings","📅","Séjours"],["rooms","🛏️","Chambres"],["clients","👥","Clients"],["settings","⚙️","Réglages"]];
+const TABS=[["home","🏠","Accueil"],["bookings","📅","Séjours"],["rooms","🛏️","Chambres"],["clients","👥","Clients"],["cyber","🛡️","Sécurité"],["settings","⚙️","Réglages"]];
 function renderNav(){$("#nav").innerHTML=TABS.map(t=>`<button class="${view===t[0]?"on":""}" data-v="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join("");
  $("#nav").querySelectorAll("button").forEach(b=>b.onclick=()=>{view=b.dataset.v;render()})}
 function render(){
@@ -123,7 +130,7 @@ function render(){
  $("#hsub").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
  renderNav();
  document.querySelectorAll(".fab").forEach(e=>e.remove());
- ({home:vHome,bookings:vBookings,rooms:vRooms,clients:vClients,settings:vSettings})[view]();
+ ({home:vHome,bookings:vBookings,rooms:vRooms,clients:vClients,cyber:vCyber,settings:vSettings})[view]();
  if(["home","bookings"].includes(view)&&D.rooms.length){const f=document.createElement("button");f.className="btn fab";f.textContent="+";f.setAttribute("aria-label","Nouveau séjour");f.onclick=()=>bookingForm();document.body.appendChild(f)}
  window.scrollTo(0,0);
 }
@@ -299,7 +306,7 @@ function vSettings(){
   try{const j=await fn(e,pw);if(!j.access_token){toast("Compte créé : confirmez votre e-mail, puis connectez-vous");return}saveSess(toSess(j));syncMsg="";await pull();render();toast("Connecté")}catch(x){toast(/already|registered/i.test(x.message)?"Compte existant : utilisez Se connecter":/invalid/i.test(x.message)?"E-mail ou mot de passe incorrect":x.message)}};
  if($("#li")){$("#li").onclick=()=>enter((e,p)=>auth("token?grant_type=password",{email:e,password:p}));$("#su").onclick=()=>enter((e,p)=>auth("signup",{email:e,password:p}))}
  if($("#sy"))$("#sy").onclick=async()=>{await pull();await push(true);render();toast(syncMsg)};
- if($("#lo"))$("#lo").onclick=()=>{saveSess(null);syncMsg="";render();toast("Déconnecté (données conservées sur l'appareil)")};
+ if($("#lo"))$("#lo").onclick=()=>{saveSess(null);CY=null;cyDraft="";syncMsg="";render();toast("Déconnecté (données conservées sur l'appareil)")};
  $("#sv").onclick=()=>{Object.assign(s,{name:$("#s_n").value.trim(),phone:$("#s_p").value.trim(),address:$("#s_a").value.trim(),currency:$("#s_c").value.trim()||"FCFA",footer:$("#s_f").value.trim()});save();render();toast("Réglages enregistrés")};
  $("#ex").onclick=async()=>{const t=JSON.stringify(D);try{await navigator.clipboard.writeText(t);toast("Sauvegarde copiée — collez-la dans un message")}catch(e){$("#paste").value=t;$("#paste").select();toast("Copiez le texte affiché")}};
  const restore=txt=>{try{const p=JSON.parse(txt);if(!p||!Array.isArray(p.rooms)||!Array.isArray(p.bookings)||!Array.isArray(p.clients))throw 0;D={...D,...p,settings:{...D.settings,...(p.settings||{})}};save();render();toast("Données restaurées")}catch(e){toast("Sauvegarde invalide")}};
@@ -307,6 +314,47 @@ function vSettings(){
  $("#im").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>restore(r.result);r.readAsText(f)};
  $("#wipe").onclick=()=>{if(confirmDel($("#wipe"))){D={settings:{name:"",phone:"",address:"",currency:"FCFA",footer:"Merci de votre confiance.",invoiceCounter:0},rooms:[],clients:[],bookings:[]};save();render()}};
 }
+
+/* ---------- Assistant sécurité (agent IA CyberGuide) ---------- */
+let CY=null,cyBusy=false,cyDraft="";
+const CY_HELLO="Bonjour ! Je suis CyberGuide, votre assistant de cybersécurité. Collez un lien suspect, demandez une faille (CVE) ou une checklist de sécurité.";
+async function cyFetch(url,opt){const t=await token();if(!t)throw new Error("Session expirée : reconnectez-vous dans Réglages");
+ const r=await fetch(SB_URL+url,{...opt,headers:{apikey:SB_KEY,Authorization:"Bearer "+t,"Content-Type":"application/json"}});
+ const j=await r.json().catch(()=>null);if(!r.ok)throw new Error((j&&(j.error||j.message||j.msg))||"Erreur "+r.status);return j}
+/* Mot de passe : seuls 5 caractères de son empreinte SHA-1 quittent l'appareil (k-anonymat), jamais le mot de passe */
+async function pwnedCount(pw){const buf=await crypto.subtle.digest("SHA-1",new TextEncoder().encode(pw));
+ const hex=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("").toUpperCase();
+ const r=await fetch("https://api.pwnedpasswords.com/range/"+hex.slice(0,5),{headers:{"Add-Padding":"true"}});if(!r.ok)throw new Error("indisponible");
+ for(const l of (await r.text()).split("\n")){const [a,c]=l.trim().split(":");if(a===hex.slice(5))return parseInt(c,10)||0}return 0}
+function cyDraw(){const log=$("#cy_log");if(!log)return;log.textContent="";
+ const add=(text,who,meta)=>{const d=document.createElement("div");d.className="cy-m "+(who==="user"?"cy-u":"cy-b");d.textContent=text;
+  if(meta){const m=document.createElement("div");m.className="cy-meta";m.textContent=meta;d.appendChild(m)}log.appendChild(d)};
+ if(CY===null)add("Chargement…","bot");else{if(!CY.length)add(CY_HELLO,"bot");CY.forEach(m=>add(m.content,m.role,m.meta))}
+ if(cyBusy)add("…","bot");log.scrollTop=log.scrollHeight;
+ const b=$("#cy_send");if(b)b.disabled=cyBusy}
+async function cyLoad(){try{const rows=await cyFetch("/rest/v1/agent_messages?select=role,content&order=id.desc&limit=50",{method:"GET"});CY=(rows||[]).reverse()}catch(e){CY=[]}cyDraw()}
+async function cyAsk(){const inp=$("#cy_in");if(!inp||cyBusy)return;const text=inp.value.trim();if(!text)return;
+ if(!navigator.onLine){toast("Hors ligne : l'assistant a besoin d'Internet");return}
+ inp.value="";cyDraft="";if(CY===null)CY=[];CY.push({role:"user",content:text});cyBusy=true;cyDraw();
+ try{const j=await cyFetch("/functions/v1/agent-cyber",{method:"POST",body:JSON.stringify({message:text})});
+  const tools=j.tools_used&&j.tools_used.length?"Outils : "+[...new Set(j.tools_used)].join(", "):"";
+  CY.push({role:"assistant",content:j.reply||"(réponse vide)",meta:tools})}
+ catch(e){CY.push({role:"assistant",content:"⚠️ "+e.message})}
+ cyBusy=false;cyDraw()}
+function vCyber(){
+ if(!SESS){$("#main").innerHTML=`<div class="card"><h2 style="margin-top:0">🛡️ Assistant sécurité</h2><p class="mu">Connectez-vous à votre compte pour utiliser l'assistant de cybersécurité.</p><div class="acts"><button class="btn" id="cy_go">Se connecter</button></div></div>`;
+  $("#cy_go").onclick=()=>{view="settings";render()};return}
+ $("#main").innerHTML=`<div id="cy_log" class="cy-log" aria-live="polite"></div>
+ <div class="cy-row"><input id="cy_in" placeholder="Votre question de cybersécurité…" autocomplete="off" maxlength="4000"><button class="btn" id="cy_send">Envoyer</button></div>
+ <details class="card" style="margin-top:12px"><summary><b>Tester un mot de passe</b></summary><p class="mu">Vérifie s'il figure dans des fuites connues. Le mot de passe reste sur cet appareil et n'est jamais envoyé à l'assistant.</p>
+ <div class="cy-row"><input id="cy_pw" type="password" autocomplete="off" placeholder="Mot de passe à tester"><button class="btn sec" id="cy_pwb">Vérifier</button></div><div id="cy_pwr" class="mu" style="margin-top:8px"></div></details>
+ <p class="mu">N'écrivez rien de confidentiel : l'assistant utilise une IA en ligne gratuite. Ses réponses peuvent contenir des erreurs.</p>`;
+ const inp=$("#cy_in");inp.value=cyDraft;inp.oninput=()=>{cyDraft=inp.value};
+ inp.onkeydown=e=>{if(e.key==="Enter")cyAsk()};$("#cy_send").onclick=cyAsk;
+ $("#cy_pwb").onclick=async()=>{const i=$("#cy_pw"),o=$("#cy_pwr"),pw=i.value;if(!pw)return;o.textContent="Vérification…";
+  try{const n=await pwnedCount(pw);o.textContent=n>0?"⚠️ Ce mot de passe apparaît "+n.toLocaleString("fr-FR")+" fois dans des fuites. Ne l'utilisez plus.":"✅ Absent des fuites connues. Vérifiez aussi qu'il est long et unique."}
+  catch(e){o.textContent="Vérification impossible pour le moment."}i.value=""};
+ cyDraw();if(CY===null)cyLoad()}
 
 load();render();
 if(SESS)pull();
